@@ -1,20 +1,84 @@
 // === History Module ===
-// Manages review history in localStorage
+// Manages review history in Supabase (logged in) or localStorage (guest)
+
+import { supabase } from './supabase.js';
+import { getCurrentUser } from './auth.js';
 
 const STORAGE_KEY = 'photo_reviewer_history';
 const MAX_HISTORY = 20;
 
 /**
  * Get all history items
- * @returns {Array} History items sorted by date (newest first)
+ * @returns {Promise<Array>} History items sorted by date (newest first)
  */
-export function getHistory() {
+export async function getHistory() {
+  const user = getCurrentUser();
+  if (user) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(MAX_HISTORY);
+      
+      if (!error && data) {
+        return data.map(doc => ({
+          id: doc.id,
+          timestamp: doc.created_at,
+          thumbnail: doc.thumbnail,
+          overallScore: doc.overall_score,
+          result: doc.result,
+          imageDataUrl: doc.image_data_url
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to fetch from Supabase:', e);
+    }
+  }
+
+  // Local fallback
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
   }
+}
+
+/**
+ * Get a single history item by ID
+ * @param {string} id - Item ID
+ * @returns {Promise<object|null>}
+ */
+export async function getHistoryItem(id) {
+  const user = getCurrentUser();
+  if (user) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!error && data) {
+        return {
+          id: data.id,
+          timestamp: data.created_at,
+          thumbnail: data.thumbnail,
+          overallScore: data.overall_score,
+          result: data.result,
+          imageDataUrl: data.image_data_url
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to fetch item from Supabase:', e);
+    }
+  }
+
+  const history = await getHistory();
+  return history.find(item => item.id == id) || null;
 }
 
 /**
@@ -25,12 +89,46 @@ export function getHistory() {
  * @param {object} params.result - Full analysis result
  * @param {string} params.imageDataUrl - Full image data URL for re-viewing
  */
-export function saveToHistory({ thumbnail, overallScore, result, imageDataUrl }) {
-  const history = getHistory();
+export async function saveToHistory({ thumbnail, overallScore, result, imageDataUrl }) {
+  const user = getCurrentUser();
+  const timestamp = new Date().toISOString();
+  
+  if (user) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: user.id,
+          thumbnail,
+          overall_score: overallScore,
+          result,
+          image_data_url: imageDataUrl,
+          created_at: timestamp
+        })
+        .select()
+        .single();
+        
+      if (!error && data) {
+        return {
+          id: data.id,
+          timestamp: data.created_at,
+          thumbnail,
+          overallScore,
+          result,
+          imageDataUrl
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to save to Supabase:', e);
+    }
+  }
+
+  // Local fallback
+  const history = await getHistory();
 
   const item = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    timestamp: new Date().toISOString(),
+    timestamp,
     thumbnail,
     overallScore,
     result,
@@ -63,8 +161,17 @@ export function saveToHistory({ thumbnail, overallScore, result, imageDataUrl })
 /**
  * Clear all history
  */
-export function clearHistory() {
-  localStorage.removeItem(STORAGE_KEY);
+export async function clearHistory() {
+  const user = getCurrentUser();
+  if (user) {
+    try {
+      await supabase.from('reviews').delete().eq('user_id', user.id);
+    } catch (e) {
+      console.warn('Failed to clear Supabase history:', e);
+    }
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 }
 
 /**
@@ -133,9 +240,9 @@ export function generatePreviewImage(imageUrl) {
  * Render history list in the UI
  * @param {Function} onItemClick - Callback when a history item is clicked
  */
-export function renderHistory(onItemClick) {
+export async function renderHistory(onItemClick) {
   const container = document.getElementById('history-list');
-  const history = getHistory();
+  const history = await getHistory();
 
   if (history.length === 0) {
     container.innerHTML = '<p class="empty-state">Chưa có ảnh nào được review</p>';

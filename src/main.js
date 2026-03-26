@@ -8,9 +8,12 @@ import {
   saveToHistory,
   clearHistory,
   renderHistory,
+  getHistoryItem,
   generateThumbnail,
   generatePreviewImage
 } from './history.js';
+import { supabase } from './supabase.js';
+import { signInWithGoogle, signOutUser, onAuthChange, getCurrentUser } from './auth.js';
 
 // --- State ---
 let currentImage = {
@@ -24,16 +27,208 @@ const $ = (id) => document.getElementById(id);
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
+  initRouting();
+  initAuthUI();
   initSettingsModal();
   initUploadHandlers();
   initButtons();
-  initHistoryView();
+  
+  // Listen for Supabase auth changes
+  onAuthChange(async (user) => {
+    updateAuthUI(user);
+    
+    if (user) {
+      await initHistoryView(); // Reload history for the active user state
 
-  // Show API key reminder if not set
-  if (!hasApiKey()) {
-    showToast('Vui lòng nhập Gemini API Key trong ⚙️ Cài đặt để bắt đầu', 'info');
-  }
+      // Load saved API key
+      const key = await getApiKey(); // Await async
+      if (key) $('api-key-input').value = key;
+    } else {
+      // Clear history data for guest
+      $('history-list').innerHTML = '<p class="empty-state">Vui lòng đăng nhập bằng Google để xem lịch sử.</p>';
+    }
+
+    // Enforce route permissions AFTER auth state resolves
+    enforceRoutePermissions(user);
+  });
 });
+
+// ============================
+// Routing & Permissions
+// ============================
+function initRouting() {
+  setTimeout(() => {
+    if (window.location.hash.includes('access_token')) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }, 100);
+
+  $('logo-btn').addEventListener('click', () => {
+    goToHome();
+  });
+
+  window.addEventListener('popstate', handleRouteChange);
+  handleRouteChange();
+}
+
+async function handleRouteChange() {
+  const path = window.location.pathname;
+  const user = getCurrentUser();
+  
+  if (path === '/history') {
+    if (!user) {
+      goToHome();
+      return;
+    }
+    showHistoryViewOnly();
+    renderHistory(handleHistoryItemClick);
+  } else if (path.startsWith('/history/')) {
+    const id = path.split('/')[2];
+    if (id) {
+      showResultsViewOnly();
+      const item = await getHistoryItem(id);
+      if (item) {
+        resetResults();
+        renderResults(item.result, item.imageDataUrl);
+      } else {
+        showToast('Không tìm thấy bản review này', 'error');
+        goToHome();
+      }
+    } else {
+      goToHome();
+    }
+  } else {
+    showMainViewOnly();
+  }
+}
+
+
+
+function goToHome() {
+  if (window.location.pathname !== '/') {
+    history.pushState(null, '', '/');
+  }
+  handleRouteChange();
+}
+
+function goToHistory() {
+  const user = getCurrentUser();
+  if (!user) {
+    showToast('Vui lòng đăng nhập để truy cập lịch sử', 'error');
+    return;
+  }
+  
+  if (window.location.pathname !== '/history') {
+    history.pushState(null, '', '/history');
+  }
+  handleRouteChange();
+}
+
+function showHistoryViewOnly() {
+  $('upload-section').classList.add('hidden');
+  $('results-section').classList.add('hidden');
+  $('history-section').classList.remove('hidden');
+}
+
+function showMainViewOnly() {
+  $('history-section').classList.add('hidden');
+  $('upload-section').classList.remove('hidden');
+  $('results-section').classList.add('hidden');
+}
+
+function showResultsViewOnly() {
+  $('upload-section').classList.add('hidden');
+  $('history-section').classList.add('hidden');
+  $('results-section').classList.remove('hidden');
+}
+
+// ============================
+// Auth UI
+// ============================
+function initAuthUI() {
+  $('login-btn').addEventListener('click', handleLogin);
+  $('logout-btn').addEventListener('click', handleLogout);
+
+  // Dropdown toggle
+  const userMenuBtn = $('user-menu-btn');
+  const userDropdown = $('user-dropdown');
+  const userMenuContainer = $('user-menu-container');
+
+  userMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !userDropdown.classList.contains('hidden');
+    if (isOpen) {
+      userDropdown.classList.add('hidden');
+      userMenuContainer.classList.remove('open');
+    } else {
+      userDropdown.classList.remove('hidden');
+      userMenuContainer.classList.add('open');
+    }
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', () => {
+    userDropdown.classList.add('hidden');
+    userMenuContainer.classList.remove('open');
+  });
+
+  // Handle dropdown history button
+  $('dropdown-history-btn').addEventListener('click', () => {
+    goToHistory();
+    // Close dropdown
+    userDropdown.classList.add('hidden');
+    userMenuContainer.classList.remove('open');
+  });
+
+  // Handle dropdown settings button similarly to the main settings button
+  $('dropdown-settings-btn').addEventListener('click', async () => {
+    $('settings-modal').classList.remove('hidden');
+    $('api-key-input').value = await getApiKey();
+    // Close dropdown
+    userDropdown.classList.add('hidden');
+    userMenuContainer.classList.remove('open');
+  });
+}
+
+async function handleLogin() {
+  try {
+    $('login-btn').disabled = true;
+    await signInWithGoogle();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    $('login-btn').disabled = false;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await signOutUser();
+    goToHome(); // Return to home on logout
+  } catch (err) {
+    showToast('Lỗi đăng xuất.', 'error');
+  }
+}
+
+function updateAuthUI(user) {
+  const loginBtn = $('login-btn');
+  const userMenuContainer = $('user-menu-container');
+  const userAvatar = $('user-avatar');
+  const userName = $('user-name');
+  if (user) {
+    const meta = user.user_metadata || {};
+    loginBtn.classList.add('hidden');
+    userMenuContainer.classList.remove('hidden');
+    
+    // Fallback URL for avatar if metadata missing
+    userAvatar.src = meta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(meta.full_name || user.email || 'U')}&background=random`;
+    userAvatar.alt = meta.full_name || 'User';
+    userName.textContent = meta.full_name || user.email;
+  } else {
+    loginBtn.classList.remove('hidden');
+    userMenuContainer.classList.add('hidden');
+  }
+}
 
 // ============================
 // Settings Modal
@@ -42,11 +237,6 @@ function initSettingsModal() {
   const modal = $('settings-modal');
   const input = $('api-key-input');
   const toggleBtn = $('toggle-key-visibility');
-
-  $('settings-btn').addEventListener('click', () => {
-    modal.classList.remove('hidden');
-    input.value = getApiKey();
-  });
 
   $('close-settings').addEventListener('click', () => {
     modal.classList.add('hidden');
@@ -71,13 +261,13 @@ function initSettingsModal() {
   });
 
   // Save API key
-  $('save-api-key').addEventListener('click', () => {
+  $('save-api-key').addEventListener('click', async () => {
     const key = input.value.trim();
     if (!key) {
       showToast('Vui lòng nhập API Key', 'error');
       return;
     }
-    setApiKey(key);
+    await setApiKey(key);
     modal.classList.add('hidden');
     showToast('Đã lưu API Key thành công!', 'success');
   });
@@ -126,16 +316,15 @@ function initButtons() {
   // New review button
   $('new-review-btn').addEventListener('click', () => {
     resetUploadState();
-    $('results-section').classList.add('hidden');
-    $('upload-section').classList.remove('hidden');
     resetResults();
+    goToHome();
   });
 
   // Clear history
-  $('clear-history').addEventListener('click', () => {
+  $('clear-history').addEventListener('click', async () => {
     if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử review?')) {
-      clearHistory();
-      renderHistory(handleHistoryItemClick);
+      await clearHistory();
+      await renderHistory(handleHistoryItemClick);
       showToast('Đã xóa lịch sử', 'success');
     }
   });
@@ -150,8 +339,15 @@ async function handleAnalyze() {
     return;
   }
 
-  if (!hasApiKey()) {
-    showToast('Vui lòng nhập API Key trong ⚙️ Cài đặt', 'error');
+  const user = getCurrentUser();
+  if (!user) {
+    showToast('Vui lòng đăng nhập để phân tích ảnh', 'error');
+    return;
+  }
+
+  const hasKey = await hasApiKey();
+  if (!hasKey) {
+    showToast('Vui lòng cài đặt API Key trong menu tài khoản', 'error');
     $('settings-modal').classList.remove('hidden');
     return;
   }
@@ -181,15 +377,22 @@ async function handleAnalyze() {
     try {
       const thumbnail = await generateThumbnail(currentImage.previewUrl);
       const previewImage = await generatePreviewImage(currentImage.previewUrl);
-      saveToHistory({
+      const historyItem = await saveToHistory({
         thumbnail,
         overallScore: result.overall_score,
         result,
         imageDataUrl: previewImage
       });
-      renderHistory(handleHistoryItemClick);
+      
+      // Update URL to the specific history share link
+      history.pushState(null, '', `/history/${historyItem.id}`);
+      handleRouteChange();
+      
+      showToast('Phân tích hoàn tất!', 'success');
     } catch (e) {
       console.warn('Failed to save to history:', e);
+      showResultsViewOnly();
+      renderResults(result, currentImage.previewUrl);
     }
 
   } catch (err) {
@@ -205,20 +408,13 @@ async function handleAnalyze() {
 // ============================
 // History
 // ============================
-function initHistoryView() {
-  renderHistory(handleHistoryItemClick);
+async function initHistoryView() {
+  await renderHistory(handleHistoryItemClick);
 }
 
 function handleHistoryItemClick(item) {
-  // Show results from history
-  resetResults();
-  renderResults(item.result, item.imageDataUrl || item.thumbnail);
-
-  $('upload-section').classList.add('hidden');
-  $('loading-section').classList.add('hidden');
-  $('results-section').classList.remove('hidden');
-
-  // Scroll to top
+  history.pushState(null, '', `/history/${item.id}`);
+  handleRouteChange();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
