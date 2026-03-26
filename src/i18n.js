@@ -48,6 +48,7 @@ export const translations = {
       overall_score: "Điểm tổng",
       criteria_score: "Điểm theo tiêu chí",
       detailed_analysis: "Phân tích chi tiết",
+      suggestions_title: "Góp ý cải thiện",
       review_another: "Review ảnh khác"
     },
     history: {
@@ -137,6 +138,7 @@ export const translations = {
       overall_score: "Overall Score",
       criteria_score: "Criteria Scores",
       detailed_analysis: "Detailed Analysis",
+      suggestions_title: "Improvement Suggestions",
       review_another: "Review Another Photo"
     },
     history: {

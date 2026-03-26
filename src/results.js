@@ -80,14 +80,14 @@ function renderCriteria(criteria) {
       <div class="criteria-header">
         <span class="criteria-label">
           <span class="criteria-emoji">${config.emoji}</span>
-          ${t('criteria.' + config.labelKey)}
+          <span data-i18n="criteria.${config.labelKey}">${t('criteria.' + config.labelKey)}</span>
         </span>
         <span class="criteria-score" style="color: ${scoreColor}">${data.score}</span>
       </div>
       <div class="criteria-bar">
         <div class="criteria-fill" style="background: linear-gradient(90deg, ${config.color}, ${config.color}aa);" data-width="${data.score}%"></div>
       </div>
-      <p class="criteria-detail">${data.comment}</p>
+      <p class="criteria-detail">${formatText(data.comment)}</p>
     `;
     container.appendChild(item);
 
