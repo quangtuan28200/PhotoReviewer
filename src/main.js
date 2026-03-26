@@ -12,14 +12,13 @@ import {
   generateThumbnail,
   generatePreviewImage,
 } from "./history.js";
-import { supabase } from "./supabase.js";
 import {
   signInWithGoogle,
   signOutUser,
   onAuthChange,
   getCurrentUser,
 } from "./auth.js";
-import { renderTranslations, setLanguage, t, getLanguage } from "./i18n.js";
+import { setLanguage, t, getLanguage } from "./i18n.js";
 
 // --- State ---
 let currentImage = {
@@ -495,7 +494,7 @@ function toggleLoading(show, title = null, desc = null) {
 }
 
 function resetUploadState() {
-  currentImage = { base64: null, mimeType: null, previewUrl: null };
+  currentImage = { base64: null, mimeType: null, previewUrl: null, metadata: null };
   $("preview-area").classList.add("hidden");
   $("dropzone").classList.remove("hidden");
   $("file-input").value = "";
