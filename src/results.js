@@ -1,57 +1,36 @@
 // === Results Module ===
-// Renders analysis results: gauge, criteria bars, analysis text, suggestions
+// Renders analysis results with premium UI
 
 const CRITERIA_CONFIG = {
-  composition: { label: '📐 Bố cục', color: '#a855f7' },
-  lighting:    { label: '💡 Ánh sáng', color: '#f97316' },
-  color:       { label: '🎨 Màu sắc', color: '#3b82f6' },
-  sharpness:   { label: '🔍 Độ nét', color: '#06b6d4' },
-  emotion:     { label: '🎭 Cảm xúc', color: '#22c55e' },
-  technical:   { label: '⚡ Kỹ thuật', color: '#eab308' }
-};
-
-const PRIORITY_ICONS = {
-  high: '🔴',
-  medium: '🟡',
-  low: '🟢'
+  composition: { label: 'Bố cục',      emoji: '📐', color: '#a855f7' },
+  lighting:    { label: 'Ánh sáng',     emoji: '💡', color: '#f97316' },
+  color:       { label: 'Màu sắc',      emoji: '🎨', color: '#3b82f6' },
+  sharpness:   { label: 'Độ nét',       emoji: '🔍', color: '#06b6d4' },
+  emotion:     { label: 'Cảm xúc',      emoji: '🎭', color: '#22c55e' },
+  technical:   { label: 'Kỹ thuật',     emoji: '⚡', color: '#eab308' }
 };
 
 /**
  * Render all results from the AI analysis
- * @param {object} result - Parsed analysis result from API
- * @param {string} imageUrl - Preview URL of the reviewed image
  */
 export function renderResults(result, imageUrl) {
-  // Add SVG gradient definition for gauge
   ensureGaugeGradient();
-
-  // Render overall score gauge
   renderOverallScore(result.overall_score, result.verdict);
-
-  // Render criteria bars
-  renderCriteria(result.criteria);
-
-  // Render reviewed image
   renderReviewedImage(imageUrl);
-
-  // Render analysis text
+  renderCriteria(result.criteria);
   renderAnalysis(result.analysis);
-
-  // Render suggestions
   renderSuggestions(result.suggestions);
 }
 
 function ensureGaugeGradient() {
   const gauge = document.querySelector('.gauge');
-  if (!gauge) return;
-
-  // Check if gradient already exists
-  if (gauge.querySelector('#gauge-gradient')) return;
+  if (!gauge || gauge.querySelector('#gauge-gradient')) return;
 
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
   defs.innerHTML = `
     <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="50%" stop-color="#6366f1" />
       <stop offset="100%" stop-color="#3b82f6" />
     </linearGradient>
   `;
@@ -63,27 +42,24 @@ function renderOverallScore(score, verdict) {
   const gaugeFill = document.getElementById('gauge-fill');
   const verdictEl = document.getElementById('overall-verdict');
 
-  // Animate score count up
-  animateValue(scoreEl, 0, score, 1500);
+  animateValue(scoreEl, 0, score, 1800);
 
-  // Animate gauge fill
-  const circumference = 2 * Math.PI * 85; // ~534
+  const circumference = 2 * Math.PI * 85;
   const offset = circumference - (score / 100) * circumference;
   setTimeout(() => {
     gaugeFill.style.strokeDashoffset = offset;
   }, 100);
 
-  // Set verdict with color based on score
   verdictEl.textContent = verdict;
-  if (score >= 80) {
-    verdictEl.style.color = '#22c55e';
-  } else if (score >= 60) {
-    verdictEl.style.color = '#eab308';
-  } else if (score >= 40) {
-    verdictEl.style.color = '#f97316';
-  } else {
-    verdictEl.style.color = '#ef4444';
-  }
+
+  if (score >= 80) verdictEl.style.color = '#22c55e';
+  else if (score >= 60) verdictEl.style.color = '#eab308';
+  else if (score >= 40) verdictEl.style.color = '#f97316';
+  else verdictEl.style.color = '#ef4444';
+}
+
+function renderReviewedImage(imageUrl) {
+  document.getElementById('reviewed-image').src = imageUrl;
 }
 
 function renderCriteria(criteria) {
@@ -94,15 +70,20 @@ function renderCriteria(criteria) {
     const data = criteria[key];
     if (!data) return;
 
+    const scoreColor = getScoreColor(data.score);
+
     const item = document.createElement('div');
     item.className = 'criteria-item';
     item.innerHTML = `
       <div class="criteria-header">
-        <span class="criteria-label">${config.label}</span>
-        <span class="criteria-score">${data.score}/100</span>
+        <span class="criteria-label">
+          <span class="criteria-emoji">${config.emoji}</span>
+          ${config.label}
+        </span>
+        <span class="criteria-score" style="color: ${scoreColor}">${data.score}</span>
       </div>
       <div class="criteria-bar">
-        <div class="criteria-fill" style="background: ${config.color};" data-width="${data.score}%"></div>
+        <div class="criteria-fill" style="background: linear-gradient(90deg, ${config.color}, ${config.color}aa);" data-width="${data.score}%"></div>
       </div>
       <p class="criteria-detail">${data.comment}</p>
     `;
@@ -110,20 +91,13 @@ function renderCriteria(criteria) {
 
     // Animate bar fill with stagger
     setTimeout(() => {
-      const fill = item.querySelector('.criteria-fill');
-      fill.style.width = data.score + '%';
-    }, 300 + index * 150);
+      item.querySelector('.criteria-fill').style.width = data.score + '%';
+    }, 400 + index * 180);
   });
-}
-
-function renderReviewedImage(imageUrl) {
-  const img = document.getElementById('reviewed-image');
-  img.src = imageUrl;
 }
 
 function renderAnalysis(analysisText) {
   const container = document.getElementById('analysis-content');
-  // Split by newlines and wrap in paragraphs
   const paragraphs = analysisText.split('\n').filter(p => p.trim());
   container.innerHTML = paragraphs.map(p => `<p>${formatText(p)}</p>`).join('');
 }
@@ -140,28 +114,29 @@ function renderSuggestions(suggestions) {
   suggestions.forEach((suggestion, index) => {
     const item = document.createElement('div');
     item.className = 'suggestion-item';
-    item.style.animationDelay = `${0.5 + index * 0.1}s`;
+    item.style.animationDelay = `${0.4 + index * 0.1}s`;
     item.innerHTML = `
-      <span class="suggestion-icon">${PRIORITY_ICONS[suggestion.priority] || '💡'}</span>
+      <div class="suggestion-priority ${suggestion.priority}"></div>
       <div class="suggestion-text">
-        <strong>${suggestion.title}</strong>
-        ${suggestion.detail}
+        <span class="suggestion-title">${suggestion.title}</span>
+        <span class="suggestion-detail">${suggestion.detail}</span>
       </div>
     `;
     container.appendChild(item);
   });
 }
 
-/**
- * Simple text formatting: bold **text**
- */
+function getScoreColor(score) {
+  if (score >= 80) return '#22c55e';
+  if (score >= 60) return '#eab308';
+  if (score >= 40) return '#f97316';
+  return '#ef4444';
+}
+
 function formatText(text) {
   return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
 
-/**
- * Animate a number counting up
- */
 function animateValue(element, start, end, duration) {
   const range = end - start;
   const startTime = performance.now();
@@ -169,29 +144,21 @@ function animateValue(element, start, end, duration) {
   function update(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-
-    // Ease out cubic
     const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(start + range * eased);
-
-    element.textContent = current;
-
-    if (progress < 1) {
-      requestAnimationFrame(update);
-    }
+    element.textContent = Math.round(start + range * eased);
+    if (progress < 1) requestAnimationFrame(update);
   }
 
   requestAnimationFrame(update);
 }
 
 /**
- * Reset results section to initial state
+ * Reset results section
  */
 export function resetResults() {
   const gaugeFill = document.getElementById('gauge-fill');
-  if (gaugeFill) {
-    gaugeFill.style.strokeDashoffset = 534;
-  }
+  if (gaugeFill) gaugeFill.style.strokeDashoffset = 534;
+
   const scoreEl = document.getElementById('overall-score-value');
   if (scoreEl) scoreEl.textContent = '0';
 
