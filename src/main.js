@@ -28,6 +28,9 @@ let currentImage = {
   previewUrl: null,
 };
 
+// Cache for the latest result to avoid re-fetching after analysis
+let latestAnalysisResult = null;
+
 // --- DOM Elements ---
 const $ = (id) => document.getElementById(id);
 
@@ -93,17 +96,30 @@ async function handleRouteChange() {
   } else if (path.startsWith("/history/")) {
     const id = path.split("/")[2];
     if (id) {
-      toggleLoading(true, t("loading_history.title"), t("loading_history.desc"));
-      const item = await getHistoryItem(id);
-      toggleLoading(false);
-
-      if (item) {
+      // Check if this is the item we just analyzed
+      if (latestAnalysisResult && latestAnalysisResult.id === id) {
         showResultsViewOnly();
         resetResults();
-        renderResults(item.result, item.imageDataUrl);
+        renderResults(latestAnalysisResult.result, latestAnalysisResult.imageDataUrl);
       } else {
-        showToast(t("messages.history_not_found"), "error");
-        goToHome();
+        toggleLoading(true, t("loading_history.title"), t("loading_history.desc"));
+        try {
+          const item = await getHistoryItem(id);
+          if (item) {
+            showResultsViewOnly();
+            resetResults();
+            renderResults(item.result, item.imageDataUrl);
+          } else {
+            showToast(t("messages.history_not_found"), "error");
+            goToHome();
+          }
+        } catch (err) {
+          console.error("Route change error:", err);
+          showToast(t("messages.generic_error"), "error");
+          goToHome();
+        } finally {
+          toggleLoading(false);
+        }
       }
     } else {
       goToHome();
@@ -393,34 +409,42 @@ async function handleAnalyze() {
       throw new Error(t("messages.ai_return_error"));
     }
 
-    // Render results
-    resetResults();
-    renderResults(result, currentImage.previewUrl);
-
-    // Show results section
-    $("loading-section").classList.add("hidden");
-    $("results-section").classList.remove("hidden");
-
     // Save to history
+    let historyItem = null;
     try {
       const thumbnail = await generateThumbnail(currentImage.previewUrl);
       const previewImage = await generatePreviewImage(currentImage.previewUrl);
-      const historyItem = await saveToHistory({
+      historyItem = await saveToHistory({
         thumbnail,
         overallScore: result.overall_score,
         result,
         imageDataUrl: previewImage,
       });
 
+      // Cache locally to prevent redundant fetch in handleRouteChange
+      latestAnalysisResult = historyItem;
+      
       // Update URL to the specific history share link
       history.pushState(null, "", `/history/${historyItem.id}`);
-      handleRouteChange();
-
-      showToast(t("messages.analysis_complete"), "success");
+      
+      // We don't call handleRouteChange() directly here anymore, 
+      // instead we rely on the state update or just show the results.
+      // But pushState doesn't trigger popstate, so we do need to call it 
+      // OR just finish the UI work here.
     } catch (e) {
       console.warn("Failed to save to history:", e);
-      showResultsViewOnly();
-      renderResults(result, currentImage.previewUrl);
+    }
+
+    // Common results display logic
+    resetResults();
+    renderResults(result, currentImage.previewUrl);
+    showResultsViewOnly();
+    
+    // Important: hide loading AFTER results are ready or route is updated
+    $("loading-section").classList.add("hidden");
+    
+    if (historyItem) {
+      showToast(t("messages.analysis_complete"), "success");
     }
   } catch (err) {
     console.error("Analysis error:", err);
