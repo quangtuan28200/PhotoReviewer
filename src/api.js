@@ -1,52 +1,12 @@
 // === API Module ===
 // Handles Gemini Vision API calls for photo analysis
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `Bạn là một photographer chuyên nghiệp với hơn 20 năm kinh nghiệm trong nhiếp ảnh nghệ thuật, chụp chân dung, phong cảnh, đường phố, và thương mại. Bạn cũng là giám khảo các cuộc thi nhiếp ảnh quốc tế.
 
-Hãy phân tích bức ảnh được cung cấp và trả về kết quả phân tích theo đúng JSON format bên dưới. Chấm điểm công bằng, chính xác, đưa ra nhận xét chi tiết và góp ý cụ thể, thực tế để người chụp có thể cải thiện.
-
-BẮT BUỘC trả về JSON hợp lệ theo cấu trúc sau (không thêm markdown, không thêm text ngoài JSON):
-
-{
-  "overall_score": <số nguyên từ 0-100>,
-  "verdict": "<nhận xét tổng quan ngắn gọn, 1-2 câu>",
-  "criteria": {
-    "composition": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về bố cục: quy tắc 1/3, leading lines, framing, balance, negative space...>"
-    },
-    "lighting": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về ánh sáng: hướng sáng, chất lượng ánh sáng, shadow, highlight, golden hour...>"
-    },
-    "color": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về màu sắc: color harmony, white balance, color grading, saturation, contrast...>"
-    },
-    "sharpness": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về độ nét: focus, depth of field, noise, chi tiết, texture...>"
-    },
-    "emotion": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về cảm xúc/câu chuyện: mood, storytelling, connection, impact, ý nghĩa...>"
-    },
-    "technical": {
-      "score": <0-100>,
-      "comment": "<nhận xét chi tiết về kỹ thuật: exposure, dynamic range, post-processing, chất lượng ảnh tổng thể...>"
-    }
-  },
-  "analysis": "<phân tích tổng quan chi tiết về bức ảnh, phong cách, thể loại, điểm mạnh, điểm yếu - 3-5 đoạn văn>",
-  "suggestions": [
-    {
-      "title": "<tiêu đề góp ý ngắn gọn>",
-      "detail": "<mô tả chi tiết cách cải thiện>",
-      "priority": "<high|medium|low>"
-    }
-  ]
-}
+Hãy phân tích bức ảnh được cung cấp. Chấm điểm công bằng, chính xác, đưa ra nhận xét chi tiết và góp ý cụ thể, thực tế để người chụp có thể cải thiện.
 
 Lưu ý:
 - Chấm điểm thực tế, không quá dễ dãi cũng không quá khắt khe
@@ -54,6 +14,93 @@ Lưu ý:
 - Phân tích bằng tiếng Việt
 - Trả về tối thiểu 3 góp ý, tối đa 6 góp ý
 - overall_score nên là trung bình có trọng số của các tiêu chí`;
+
+// JSON Schema to enforce structured output from Gemini
+const RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    overall_score: {
+      type: "INTEGER",
+      description: "Điểm tổng từ 0-100"
+    },
+    verdict: {
+      type: "STRING",
+      description: "Nhận xét tổng quan ngắn gọn, 1-2 câu"
+    },
+    criteria: {
+      type: "OBJECT",
+      properties: {
+        composition: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm bố cục 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về bố cục: quy tắc 1/3, leading lines, framing, balance, negative space" }
+          },
+          required: ["score", "comment"]
+        },
+        lighting: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm ánh sáng 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về ánh sáng: hướng sáng, chất lượng, shadow, highlight, golden hour" }
+          },
+          required: ["score", "comment"]
+        },
+        color: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm màu sắc 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về màu sắc: color harmony, white balance, color grading, saturation, contrast" }
+          },
+          required: ["score", "comment"]
+        },
+        sharpness: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm độ nét 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về độ nét: focus, depth of field, noise, chi tiết, texture" }
+          },
+          required: ["score", "comment"]
+        },
+        emotion: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm cảm xúc 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về cảm xúc/câu chuyện: mood, storytelling, connection, impact, ý nghĩa" }
+          },
+          required: ["score", "comment"]
+        },
+        technical: {
+          type: "OBJECT",
+          properties: {
+            score: { type: "INTEGER", description: "Điểm kỹ thuật 0-100" },
+            comment: { type: "STRING", description: "Nhận xét chi tiết về kỹ thuật: exposure, dynamic range, post-processing, chất lượng tổng thể" }
+          },
+          required: ["score", "comment"]
+        }
+      },
+      required: ["composition", "lighting", "color", "sharpness", "emotion", "technical"]
+    },
+    analysis: {
+      type: "STRING",
+      description: "Phân tích tổng quan chi tiết về bức ảnh, phong cách, thể loại, điểm mạnh, điểm yếu - 3-5 đoạn văn"
+    },
+    suggestions: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          title: { type: "STRING", description: "Tiêu đề góp ý ngắn gọn" },
+          detail: { type: "STRING", description: "Mô tả chi tiết cách cải thiện" },
+          priority: { type: "STRING", description: "Mức độ ưu tiên: high, medium, hoặc low" }
+        },
+        required: ["title", "detail", "priority"]
+      },
+      description: "Danh sách 3-6 góp ý cải thiện"
+    }
+  },
+  required: ["overall_score", "verdict", "criteria", "analysis", "suggestions"]
+};
 
 /**
  * Get API key from localStorage
@@ -105,14 +152,18 @@ export async function analyzePhoto(base64Image, mimeType) {
     generationConfig: {
       temperature: 0.7,
       topP: 0.9,
-      maxOutputTokens: 4096,
-      responseMimeType: "application/json"
+      maxOutputTokens: 16384,
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA
     }
   };
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+  const response = await fetch(GEMINI_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
     body: JSON.stringify(requestBody)
   });
 
@@ -135,12 +186,9 @@ export async function analyzePhoto(base64Image, mimeType) {
     throw new Error('Không nhận được phản hồi từ AI. Vui lòng thử lại.');
   }
 
-  // Parse JSON from response
+  // Parse JSON — with responseSchema, Gemini guarantees valid JSON
   try {
-    // Try to extract JSON if wrapped in markdown code blocks
-    const jsonMatch = textContent.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const jsonStr = jsonMatch ? jsonMatch[1].trim() : textContent.trim();
-    return JSON.parse(jsonStr);
+    return JSON.parse(textContent);
   } catch (e) {
     console.error('Failed to parse AI response:', textContent);
     throw new Error('AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
