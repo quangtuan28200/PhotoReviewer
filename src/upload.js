@@ -3,7 +3,6 @@
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_DIMENSION = 2048; // Max width/height for API (compress larger images)
 
 /**
  * Initialize upload functionality
@@ -67,8 +66,7 @@ async function handleFile(file, callbacks) {
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
 
-    // Compress and convert to base64
-    const { base64, mimeType } = await compressImage(file);
+    const { base64, mimeType } = await readImageAsBase64(file);
 
     callbacks.onImageReady(base64, mimeType, previewUrl);
   } catch (err) {
@@ -78,48 +76,15 @@ async function handleFile(file, callbacks) {
 }
 
 /**
- * Compress image if needed and return base64
+ * Read image file and return base64 without any compression
  */
-function compressImage(file) {
+function readImageAsBase64(file) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
     const reader = new FileReader();
 
     reader.onload = (e) => {
-      img.onload = () => {
-        let { width, height } = img;
-
-        // Only compress if too large
-        if (width <= MAX_DIMENSION && height <= MAX_DIMENSION && file.size <= 4 * 1024 * 1024) {
-          // No compression needed — use original
-          const base64 = e.target.result.split(',')[1];
-          resolve({ base64, mimeType: file.type });
-          return;
-        }
-
-        // Scale down
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-          const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
-        // Draw to canvas and compress
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const outputMime = 'image/jpeg';
-        const quality = 0.85;
-        const dataUrl = canvas.toDataURL(outputMime, quality);
-        const base64 = dataUrl.split(',')[1];
-        resolve({ base64, mimeType: outputMime });
-      };
-
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = e.target.result;
+      const base64 = e.target.result.split(',')[1];
+      resolve({ base64, mimeType: file.type });
     };
 
     reader.onerror = () => reject(new Error('Failed to read file'));

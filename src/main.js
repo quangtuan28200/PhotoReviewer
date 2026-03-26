@@ -8,7 +8,8 @@ import {
   saveToHistory,
   clearHistory,
   renderHistory,
-  generateThumbnail
+  generateThumbnail,
+  generatePreviewImage
 } from './history.js';
 
 // --- State ---
@@ -179,11 +180,12 @@ async function handleAnalyze() {
     // Save to history
     try {
       const thumbnail = await generateThumbnail(currentImage.previewUrl);
+      const previewImage = await generatePreviewImage(currentImage.previewUrl);
       saveToHistory({
         thumbnail,
         overallScore: result.overall_score,
         result,
-        imageDataUrl: thumbnail // Use thumbnail to save space
+        imageDataUrl: previewImage
       });
       renderHistory(handleHistoryItemClick);
     } catch (e) {

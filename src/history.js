@@ -98,6 +98,38 @@ export function generateThumbnail(imageUrl) {
 }
 
 /**
+ * Generate a high-quality preview image for review display
+ * Keeps aspect ratio, max 1200px on longest side
+ */
+export function generatePreviewImage(imageUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const maxSize = 1200;
+      let { width, height } = img;
+
+      // Only scale down if larger than maxSize
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => reject(new Error('Failed to generate preview'));
+    img.src = imageUrl;
+  });
+}
+
+/**
  * Render history list in the UI
  * @param {Function} onItemClick - Callback when a history item is clicked
  */
