@@ -2,7 +2,7 @@
 
 **PhotoReviewer AI** is a premium, AI-powered web application designed to help photographers (and hobbyists) improve their work. It uses the **Google Gemini 2.0 Flash** vision model to provide expert-level analysis of composition, lighting, technical execution, and emotional impact.
 
-![App Screenshot](file:///Users/tian/.gemini/antigravity/brain/e14a2358-2942-43db-8ce8-5b574b1a89ca/redesigned_ui_1774495877384.webp)
+![App Screenshot](docs/screenshots/banner.png)
 
 ## 🚀 Key Features
 
@@ -31,7 +31,7 @@ graph TD
     Processing -->|Store| DB[(Supabase/Local)]
     Processing -->|Render| UI[Results Dashboard]
     UI -->|Feedback| User
-    
+
     Auth[Supabase Auth] -->|JWT| User
     Auth -->|User Data| DB
 ```
@@ -45,12 +45,14 @@ graph TD
 ## 🚦 Getting Started
 
 1.  **Clone the repository**:
+
     ```bash
     git clone https://github.com/yourusername/photo-reviewer.git
     cd photo-reviewer
     ```
 
 2.  **Install dependencies**:
+
     ```bash
     npm install
     ```
@@ -65,14 +67,14 @@ graph TD
 
 ## 📂 Project Structure
 
-| File/Folder | Description |
-| :--- | :--- |
-| `src/main.js` | App entry point and UI orchestration. |
-| `src/api.js` | Gemini API integration and database sync logic. |
-| `src/auth.js` | Supabase authentication handlers. |
-| `src/i18n.js` | Internationalization (VI/EN) dictionaries. |
-| `src/style.css` | Global design system and responsive styles. |
-| `index.html` | Core application structure. |
+| File/Folder     | Description                                     |
+| :-------------- | :---------------------------------------------- |
+| `src/main.js`   | App entry point and UI orchestration.           |
+| `src/api.js`    | Gemini API integration and database sync logic. |
+| `src/auth.js`   | Supabase authentication handlers.               |
+| `src/i18n.js`   | Internationalization (VI/EN) dictionaries.      |
+| `src/style.css` | Global design system and responsive styles.     |
+| `index.html`    | Core application structure.                     |
 
 ## 📜 License
 
