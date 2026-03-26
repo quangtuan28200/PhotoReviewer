@@ -465,6 +465,26 @@ img {
   margin-bottom: var(--space-md);
 }
 
+/* --- Features Grid (from inline styles) --- */
+.home-features {
+  margin-top: var(--space-3xl);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+}
+
+.feature-card {
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+.feature-icon {
+  margin-bottom: var(--space-md);
+}
+
 /* --- Preview --- */
 #preview-area {
   margin-top: var(--space-lg);
@@ -1060,6 +1080,16 @@ img {
     max-height: 400px;
   }
 
+  /* Make sure feature cards stack nicely */
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .home-features .feature-card {
+    padding: var(--space-lg);
+  }
+
   .results-details {
     grid-template-columns: 1fr;
   }
@@ -1069,6 +1099,12 @@ img {
   }
 
   .logo h1 { font-size: 1.1rem; }
+  
+  /* Fix header actions flex wrap */
+  .header-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
 
   .dropzone {
     padding: var(--space-2xl) var(--space-md);
@@ -1093,5 +1129,80 @@ img {
   .btn-lg {
     padding: 12px 22px;
     font-size: 0.9rem;
+  }
+
+  .header-inner {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  
+  .header-actions {
+    justify-content: flex-end;
+    width: auto;
+    gap: 6px;
+  }
+
+  /* Force hide logo text on very small screens */
+  .logo h1 { 
+    display: none !important; 
+  }
+  
+  .user-info {
+    padding: 2px !important;
+    background: transparent !important;
+    border: none !important;
+    gap: 4px !important;
+  }
+  
+  .user-name, .chevron-icon { 
+    display: none !important; 
+  }
+  
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .lang-switch {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .lang-btn {
+    padding: 3px 5px;
+    font-size: 0.65rem;
+  }
+  
+  .btn-google {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .btn-google svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  /* Stack criteria elements horizontally slightly tighter */
+  .criteria-header {
+    flex-wrap: wrap;
+  }
+  
+  /* Tweak gauge size for very small phones */
+  .gauge-wrapper {
+    width: 130px;
+    height: 130px;
+  }
+  .gauge-value span:first-child {
+    font-size: 2rem;
+  }
+  
+  /* Keep buttons full width on small screens */
+  .header-actions .btn-primary {
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 }
