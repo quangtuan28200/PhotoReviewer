@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Enforce route permissions AFTER auth state resolves
-    enforceRoutePermissions(user);
+    handleRouteChange();
   });
 });
 
