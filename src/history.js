@@ -3,6 +3,7 @@
 
 import { supabase } from './supabase.js';
 import { getCurrentUser } from './auth.js';
+import { t } from './i18n.js';
 
 const STORAGE_KEY = 'photo_reviewer_history';
 const MAX_HISTORY = 20;
@@ -245,7 +246,7 @@ export async function renderHistory(onItemClick) {
   const history = await getHistory();
 
   if (history.length === 0) {
-    container.innerHTML = '<p class="empty-state">Chưa có ảnh nào được review</p>';
+    container.innerHTML = `<p class="empty-state">${t('history.empty')}</p>`;
     return;
   }
 

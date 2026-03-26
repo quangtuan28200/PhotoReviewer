@@ -1,13 +1,15 @@
 // === Results Module ===
 // Renders analysis results with premium UI
 
+import { t } from './i18n.js';
+
 const CRITERIA_CONFIG = {
-  composition: { label: 'Bố cục',      emoji: '📐', color: '#a855f7' },
-  lighting:    { label: 'Ánh sáng',     emoji: '💡', color: '#f97316' },
-  color:       { label: 'Màu sắc',      emoji: '🎨', color: '#3b82f6' },
-  sharpness:   { label: 'Độ nét',       emoji: '🔍', color: '#06b6d4' },
-  emotion:     { label: 'Cảm xúc',      emoji: '🎭', color: '#22c55e' },
-  technical:   { label: 'Kỹ thuật',     emoji: '⚡', color: '#eab308' }
+  composition: { labelKey: 'composition', emoji: '📐', color: '#a855f7' },
+  lighting:    { labelKey: 'lighting',    emoji: '💡', color: '#f97316' },
+  color:       { labelKey: 'color',       emoji: '🎨', color: '#3b82f6' },
+  sharpness:   { labelKey: 'sharpness',   emoji: '🔍', color: '#06b6d4' },
+  emotion:     { labelKey: 'emotion',     emoji: '🎭', color: '#22c55e' },
+  technical:   { labelKey: 'technical',   emoji: '⚡', color: '#eab308' }
 };
 
 /**
@@ -78,7 +80,7 @@ function renderCriteria(criteria) {
       <div class="criteria-header">
         <span class="criteria-label">
           <span class="criteria-emoji">${config.emoji}</span>
-          ${config.label}
+          ${t('criteria.' + config.labelKey)}
         </span>
         <span class="criteria-score" style="color: ${scoreColor}">${data.score}</span>
       </div>
@@ -107,7 +109,7 @@ function renderSuggestions(suggestions) {
   container.innerHTML = '';
 
   if (!suggestions || suggestions.length === 0) {
-    container.innerHTML = '<p class="empty-state">Không có góp ý nào</p>';
+    container.innerHTML = `<p class="empty-state">${t("messages.no_suggestions")}</p>`;
     return;
   }
 

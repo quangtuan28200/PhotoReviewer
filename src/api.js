@@ -1,19 +1,26 @@
 // === API Module ===
 // Handles Gemini Vision API calls for photo analysis
 
+import { getLanguage, t } from './i18n.js';
+
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const SYSTEM_PROMPT = `Bạn là một photographer chuyên nghiệp với hơn 20 năm kinh nghiệm trong nhiếp ảnh nghệ thuật, chụp chân dung, phong cảnh, đường phố, và thương mại. Bạn cũng là giám khảo các cuộc thi nhiếp ảnh quốc tế.
+function getSystemPrompt() {
+  const lang = getLanguage();
+  const langText = lang === 'en' ? 'English' : 'Vietnamese (tiếng Việt)';
+  
+  return `Bạn là một photographer chuyên nghiệp với hơn 20 năm kinh nghiệm trong nhiếp ảnh nghệ thuật, chụp chân dung, phong cảnh, đường phố, và thương mại. Bạn cũng là giám khảo các cuộc thi nhiếp ảnh quốc tế.
 
 Hãy phân tích bức ảnh được cung cấp. Chấm điểm công bằng, chính xác, đưa ra nhận xét chi tiết và góp ý cụ thể, thực tế để người chụp có thể cải thiện.
 
 Lưu ý:
 - Chấm điểm thực tế, không quá dễ dãi cũng không quá khắt khe
 - Góp ý phải cụ thể, có thể thực hiện được (actionable)
-- Phân tích bằng tiếng Việt
+- Phân tích và trả lời bằng ngôn ngữ: ${langText}
 - Trả về tối thiểu 3 góp ý, tối đa 6 góp ý
 - overall_score nên là trung bình có trọng số của các tiêu chí`;
+}
 
 // JSON Schema to enforce structured output from Gemini
 const RESPONSE_SCHEMA = {
@@ -132,14 +139,14 @@ export function hasApiKey() {
 export async function analyzePhoto(base64Image, mimeType) {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error('Vui lòng nhập API Key trong phần Cài đặt');
+    throw new Error(t('messages.key_required'));
   }
 
   const requestBody = {
     contents: [
       {
         parts: [
-          { text: SYSTEM_PROMPT },
+          { text: getSystemPrompt() },
           {
             inline_data: {
               mime_type: mimeType,
@@ -170,12 +177,12 @@ export async function analyzePhoto(base64Image, mimeType) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     if (response.status === 400) {
-      throw new Error('API Key không hợp lệ hoặc request bị lỗi. Vui lòng kiểm tra lại.');
+      throw new Error(t('messages.generic_error'));
     }
     if (response.status === 429) {
-      throw new Error('Đã vượt quá giới hạn request. Vui lòng thử lại sau ít phút.');
+      throw new Error(t('messages.generic_error'));
     }
-    throw new Error(errorData?.error?.message || `Lỗi API: ${response.status}`);
+    throw new Error(errorData?.error?.message || t('messages.generic_error'));
   }
 
   const data = await response.json();
@@ -183,7 +190,7 @@ export async function analyzePhoto(base64Image, mimeType) {
   // Extract text content from Gemini response
   const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!textContent) {
-    throw new Error('Không nhận được phản hồi từ AI. Vui lòng thử lại.');
+    throw new Error(t('messages.ai_return_error'));
   }
 
   // Parse JSON — with responseSchema, Gemini guarantees valid JSON
@@ -191,6 +198,6 @@ export async function analyzePhoto(base64Image, mimeType) {
     return JSON.parse(textContent);
   } catch (e) {
     console.error('Failed to parse AI response:', textContent);
-    throw new Error('AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+    throw new Error(t('messages.ai_return_error'));
   }
 }

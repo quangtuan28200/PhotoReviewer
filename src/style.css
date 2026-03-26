@@ -231,6 +231,12 @@ img {
   justify-content: space-between;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -260,6 +266,46 @@ img {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* --- Language Switcher --- */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  padding: 4px;
+  border-radius: var(--radius-full);
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.lang-btn:hover {
+  color: var(--text-primary);
+}
+
+.lang-btn.active {
+  color: #fff;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.lang-div {
+  color: var(--border-color);
+  font-size: 0.8rem;
+  user-select: none;
 }
 
 /* --- Modal --- */

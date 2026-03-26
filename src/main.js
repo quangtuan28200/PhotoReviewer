@@ -19,6 +19,7 @@ import {
   onAuthChange,
   getCurrentUser,
 } from "./auth.js";
+import { renderTranslations, setLanguage, t, getLanguage } from "./i18n.js";
 
 // --- State ---
 let currentImage = {
@@ -32,6 +33,7 @@ const $ = (id) => document.getElementById(id);
 
 // --- Init ---
 document.addEventListener("DOMContentLoaded", () => {
+  setLanguage(getLanguage());
   initRouting();
   initAuthUI();
   initSettingsModal();
@@ -51,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Clear history data for guest
       $("history-list").innerHTML =
-        '<p class="empty-state">Vui lòng đăng nhập bằng Google để xem lịch sử.</p>';
+        `<p class="empty-state">${t("messages.login_required")}</p>`;
     }
 
     // Enforce route permissions AFTER auth state resolves
@@ -91,7 +93,7 @@ async function handleRouteChange() {
   } else if (path.startsWith("/history/")) {
     const id = path.split("/")[2];
     if (id) {
-      toggleLoading(true, "Đang tải bản review...", "Đang truy xuất dữ liệu từ hệ thống lưu trữ");
+      toggleLoading(true, t("loading_history.title"), t("loading_history.desc"));
       const item = await getHistoryItem(id);
       toggleLoading(false);
 
@@ -100,7 +102,7 @@ async function handleRouteChange() {
         resetResults();
         renderResults(item.result, item.imageDataUrl);
       } else {
-        showToast("Không tìm thấy bản review này", "error");
+        showToast(t("messages.history_not_found"), "error");
         goToHome();
       }
     } else {
@@ -124,7 +126,7 @@ function goToHome() {
 function goToHistory() {
   const user = getCurrentUser();
   if (!user) {
-    showToast("Vui lòng đăng nhập để truy cập lịch sử", "error");
+    showToast(t("messages.login_required"), "error");
     return;
   }
 
@@ -216,7 +218,7 @@ async function handleLogout() {
     await signOutUser();
     goToHome(); // Return to home on logout
   } catch (err) {
-    showToast("Lỗi đăng xuất.", "error");
+    showToast(t("messages.generic_error"), "error");
   }
 }
 
@@ -276,12 +278,12 @@ function initSettingsModal() {
   $("save-api-key").addEventListener("click", async () => {
     const key = input.value.trim();
     if (!key) {
-      showToast("Vui lòng nhập API Key", "error");
+      showToast(t("messages.key_required"), "error");
       return;
     }
     await setApiKey(key);
     modal.classList.add("hidden");
-    showToast("Đã lưu API Key thành công!", "success");
+    showToast(t("messages.settings_saved"), "success");
   });
 
   // ESC to close
@@ -334,11 +336,22 @@ function initButtons() {
 
   // Clear history
   $("clear-history").addEventListener("click", async () => {
-    if (confirm("Bạn có chắc muốn xóa toàn bộ lịch sử review?")) {
+    if (confirm(t("history.clear_btn") + "?")) {
       await clearHistory();
       await renderHistory(handleHistoryItemClick);
-      showToast("Đã xóa lịch sử", "success");
+      showToast(t("messages.history_cleared"), "success");
     }
+  });
+
+  // Language switchers
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const lang = e.target.getAttribute('data-lang');
+      if (lang) {
+        setLanguage(lang);
+      }
+    });
   });
 }
 
@@ -347,19 +360,19 @@ function initButtons() {
 // ============================
 async function handleAnalyze() {
   if (!currentImage.base64) {
-    showToast("Vui lòng chọn ảnh trước", "error");
+    showToast(t("messages.select_photo_required"), "error");
     return;
   }
 
   const user = getCurrentUser();
   if (!user) {
-    showToast("Vui lòng đăng nhập để phân tích ảnh", "error");
+    showToast(t("messages.login_required"), "error");
     return;
   }
 
   const hasKey = await hasApiKey();
   if (!hasKey) {
-    showToast("Vui lòng cài đặt API Key trong menu tài khoản", "error");
+    showToast(t("messages.key_required"), "error");
     $("settings-modal").classList.remove("hidden");
     return;
   }
@@ -377,7 +390,7 @@ async function handleAnalyze() {
 
     // Validate result structure
     if (!result.overall_score || !result.criteria) {
-      throw new Error("AI trả về dữ liệu không đầy đủ. Vui lòng thử lại.");
+      throw new Error(t("messages.ai_return_error"));
     }
 
     // Render results
@@ -403,7 +416,7 @@ async function handleAnalyze() {
       history.pushState(null, "", `/history/${historyItem.id}`);
       handleRouteChange();
 
-      showToast("Phân tích hoàn tất!", "success");
+      showToast(t("messages.analysis_complete"), "success");
     } catch (e) {
       console.warn("Failed to save to history:", e);
       showResultsViewOnly();
@@ -415,7 +428,7 @@ async function handleAnalyze() {
     $("upload-section").classList.remove("hidden");
     $("preview-area").classList.remove("hidden");
     $("dropzone").classList.add("hidden");
-    showToast(err.message || "Có lỗi xảy ra. Vui lòng thử lại.", "error");
+    showToast(err.message || t("messages.generic_error"), "error");
   }
 }
 
@@ -431,11 +444,11 @@ function handleHistoryItemClick(item) {
   handleRouteChange();
 }
 
-function toggleLoading(show, title = 'AI đang phân tích ảnh...', desc = 'Photographer AI đang xem xét bố cục, ánh sáng, màu sắc và nhiều tiêu chí khác') {
+function toggleLoading(show, title = null, desc = null) {
   const loading = $('loading-section');
   if (show) {
-    $('loading-title').textContent = title;
-    $('loading-desc').textContent = desc;
+    $('loading-title').textContent = title || t("loading.title");
+    $('loading-desc').textContent = desc || t("loading.desc");
     $('upload-section').classList.add('hidden');
     $('results-section').classList.add('hidden');
     $('history-section').classList.add('hidden');
