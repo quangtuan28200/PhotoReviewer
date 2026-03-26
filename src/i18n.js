@@ -46,6 +46,8 @@ export const translations = {
     },
     results: {
       overall_score: "Điểm tổng",
+      exif_title: "Thông số máy ảnh",
+      exif_evaluation: "Đánh giá thiết bị & thông số:",
       criteria_score: "Điểm theo tiêu chí",
       detailed_analysis: "Phân tích chi tiết",
       suggestions_title: "Góp ý cải thiện",
@@ -138,6 +140,8 @@ export const translations = {
     },
     results: {
       overall_score: "Overall Score",
+      exif_title: "Camera Settings",
+      exif_evaluation: "Hardware & Settings Evaluation:",
       criteria_score: "Criteria Scores",
       detailed_analysis: "Detailed Analysis",
       suggestions_title: "Improvement Suggestions",

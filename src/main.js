@@ -26,6 +26,7 @@ let currentImage = {
   base64: null,
   mimeType: null,
   previewUrl: null,
+  metadata: null,
 };
 
 // Cache for the latest result to avoid re-fetching after analysis
@@ -100,9 +101,16 @@ async function handleRouteChange() {
       if (latestAnalysisResult && latestAnalysisResult.id === id) {
         showResultsViewOnly();
         resetResults();
-        renderResults(latestAnalysisResult.result, latestAnalysisResult.imageDataUrl);
+        renderResults(
+          latestAnalysisResult.result,
+          latestAnalysisResult.imageDataUrl,
+        );
       } else {
-        toggleLoading(true, t("loading_history.title"), t("loading_history.desc"));
+        toggleLoading(
+          true,
+          t("loading_history.title"),
+          t("loading_history.desc"),
+        );
         try {
           const item = await getHistoryItem(id);
           if (item) {
@@ -315,8 +323,8 @@ function initSettingsModal() {
 // ============================
 function initUploadHandlers() {
   initUpload({
-    onImageReady: (base64, mimeType, previewUrl) => {
-      currentImage = { base64, mimeType, previewUrl };
+    onImageReady: (base64, mimeType, previewUrl, metadata) => {
+      currentImage = { base64, mimeType, previewUrl, metadata };
 
       // Show preview
       $("preview-image").src = previewUrl;
@@ -360,10 +368,10 @@ function initButtons() {
   });
 
   // Language switchers
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
-      const lang = e.target.getAttribute('data-lang');
+      const lang = e.target.getAttribute("data-lang");
       if (lang) {
         setLanguage(lang);
       }
@@ -396,13 +404,17 @@ async function handleAnalyze() {
   // Show loading
   $("upload-section").classList.add("hidden");
   $("results-section").classList.add("hidden");
-  $("loading-section").classList.remove("hidden");
+  toggleLoading(true, t("loading.title"), t("loading.desc"));
 
   try {
     const result = await analyzePhoto(
       currentImage.base64,
       currentImage.mimeType,
+      currentImage.metadata,
     );
+
+    // Attach metadata for saving and rendering
+    result.metadata = currentImage.metadata;
 
     // Validate result structure
     if (!result.overall_score || !result.criteria) {
@@ -423,13 +435,13 @@ async function handleAnalyze() {
 
       // Cache locally to prevent redundant fetch in handleRouteChange
       latestAnalysisResult = historyItem;
-      
+
       // Update URL to the specific history share link
       history.pushState(null, "", `/history/${historyItem.id}`);
-      
-      // We don't call handleRouteChange() directly here anymore, 
+
+      // We don't call handleRouteChange() directly here anymore,
       // instead we rely on the state update or just show the results.
-      // But pushState doesn't trigger popstate, so we do need to call it 
+      // But pushState doesn't trigger popstate, so we do need to call it
       // OR just finish the UI work here.
     } catch (e) {
       console.warn("Failed to save to history:", e);
@@ -439,10 +451,10 @@ async function handleAnalyze() {
     resetResults();
     renderResults(result, currentImage.previewUrl);
     showResultsViewOnly();
-    
+
     // Important: hide loading AFTER results are ready or route is updated
     $("loading-section").classList.add("hidden");
-    
+
     if (historyItem) {
       showToast(t("messages.analysis_complete"), "success");
     }
@@ -469,16 +481,16 @@ function handleHistoryItemClick(item) {
 }
 
 function toggleLoading(show, title = null, desc = null) {
-  const loading = $('loading-section');
+  const loading = $("loading-section");
   if (show) {
-    $('loading-title').textContent = title || t("loading.title");
-    $('loading-desc').textContent = desc || t("loading.desc");
-    $('upload-section').classList.add('hidden');
-    $('results-section').classList.add('hidden');
-    $('history-section').classList.add('hidden');
-    loading.classList.remove('hidden');
+    $("loading-title").textContent = title || t("loading.title");
+    $("loading-desc").textContent = desc || t("loading.desc");
+    $("upload-section").classList.add("hidden");
+    $("results-section").classList.add("hidden");
+    $("history-section").classList.add("hidden");
+    loading.classList.remove("hidden");
   } else {
-    loading.classList.add('hidden');
+    loading.classList.add("hidden");
   }
 }
 

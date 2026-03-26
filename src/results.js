@@ -19,6 +19,7 @@ export function renderResults(result, imageUrl) {
   ensureGaugeGradient();
   renderOverallScore(result.overall_score, result.verdict);
   renderReviewedImage(imageUrl);
+  renderExif(result.metadata, result.exif_analysis);
   renderCriteria(result.criteria);
   renderAnalysis(result.analysis);
   renderSuggestions(result.suggestions);
@@ -62,6 +63,44 @@ function renderOverallScore(score, verdict) {
 
 function renderReviewedImage(imageUrl) {
   document.getElementById('reviewed-image').src = imageUrl;
+}
+
+function renderExif(metadata, analysisText) {
+  const container = document.getElementById('exif-section');
+  const badgesContainer = document.getElementById('exif-badges');
+  const textEl = document.getElementById('exif-analysis-text');
+
+  if (!container || !badgesContainer || !textEl) return;
+
+  if (!metadata || Object.keys(metadata).length === 0 || !analysisText) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  badgesContainer.innerHTML = '';
+  
+  const createBadge = (icon, value) => {
+    if (!value) return '';
+    return `
+      <div style="padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+        <span style="color: var(--text-primary);">${icon}</span>
+        <span>${value}</span>
+      </div>
+    `;
+  };
+
+  let html = '';
+  if (metadata.camera) html += createBadge('📷', metadata.camera);
+  if (metadata.lens) html += createBadge('🔍', metadata.lens);
+  if (metadata.focalLength) html += createBadge('📏', metadata.focalLength);
+  if (metadata.aperture) html += createBadge('👁️', metadata.aperture);
+  if (metadata.shutterSpeed) html += createBadge('⏱️', metadata.shutterSpeed);
+  if (metadata.iso) html += createBadge('☀️', metadata.iso);
+  if (metadata.software) html += createBadge('💻', metadata.software);
+
+  badgesContainer.innerHTML = html;
+  textEl.innerHTML = formatText(analysisText);
 }
 
 function renderCriteria(criteria) {
