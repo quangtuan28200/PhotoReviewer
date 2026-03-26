@@ -163,6 +163,28 @@ img {
   transform: translateY(-1px);
 }
 
+.btn-google {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  padding: 8px 20px;
+  font-weight: 500;
+  transition: all var(--transition-base);
+}
+
+.btn-google:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-purple);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.btn-google svg {
+  margin-right: 2px;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-muted);
