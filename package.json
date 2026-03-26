@@ -2,11 +2,17 @@
   "name": "photo-reviewer",
   "private": true,
   "version": "1.0.0",
+  "description": "AI-powered photo review and analysis tool",
+  "author": "Antigravity AI",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "vite": "^6.0.0"

@@ -1,5 +1,6 @@
 // === Upload Module ===
 // Handles image upload, drag & drop, preview, and compression
+import { t } from './i18n.js';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -52,13 +53,13 @@ export function initUpload(callbacks) {
 async function handleFile(file, callbacks) {
   // Validate type
   if (!ACCEPTED_TYPES.includes(file.type)) {
-    callbacks.onError?.('Định dạng ảnh không hỗ trợ. Vui lòng chọn JPG, PNG hoặc WebP.');
+    callbacks.onError?.(t('messages.unsupported_format'));
     return;
   }
 
   // Validate size
   if (file.size > MAX_FILE_SIZE) {
-    callbacks.onError?.('Ảnh quá lớn. Vui lòng chọn ảnh dưới 20MB.');
+    callbacks.onError?.(t('messages.file_too_large'));
     return;
   }
 
@@ -71,7 +72,7 @@ async function handleFile(file, callbacks) {
     callbacks.onImageReady(base64, mimeType, previewUrl);
   } catch (err) {
     console.error('Error processing image:', err);
-    callbacks.onError?.('Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.');
+    callbacks.onError?.(t('messages.image_process_error'));
   }
 }
 

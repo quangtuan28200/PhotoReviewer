@@ -76,8 +76,10 @@ export const translations = {
     },
     messages: {
       login_required: "Vui lòng đăng nhập để xem trang này",
-      key_required: "Vui lòng cài đặt API Key trong menu tài khoản",
-      analysis_complete: "Phân tích hoàn tất!",
+      image_process_error: "Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.",
+      unsupported_format: "Định dạng ảnh không hỗ trợ. Vui lòng chọn JPG, PNG hoặc WebP.",
+      file_too_large: "Ảnh quá lớn. Vui lòng chọn ảnh dưới 20MB.",
+      analysis_complete: "Phân tích ảnh hoàn tất!",
       history_not_found: "Không tìm thấy bản review này",
       settings_saved: "Đã lưu API Key thành công!",
       settings_save_error: "Lỗi lưu cài đặt",
@@ -166,7 +168,9 @@ export const translations = {
     },
     messages: {
       login_required: "Please login to view this page",
-      key_required: "Please set your API Key in the account menu",
+      image_process_error: "Error processing image. Please try again.",
+      unsupported_format: "Unsupported image format. Please choose JPG, PNG, or WebP.",
+      file_too_large: "File is too large. Please select an image under 20MB.",
       analysis_complete: "Analysis complete!",
       history_not_found: "Review not found",
       settings_saved: "API Key saved successfully!",

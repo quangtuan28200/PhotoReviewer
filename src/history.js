@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase.js';
 import { getCurrentUser } from './auth.js';
-import { t } from './i18n.js';
+import { t, getLanguage } from './i18n.js';
 
 const STORAGE_KEY = 'photo_reviewer_history';
 const MAX_HISTORY = 20;
@@ -268,7 +268,10 @@ export async function renderHistory(onItemClick) {
 
 function formatDate(isoString) {
   const d = new Date(isoString);
-  return d.toLocaleDateString('vi-VN', {
+  const lang = getLanguage();
+  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  
+  return d.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
