@@ -2,6 +2,8 @@
 // Handles Gemini Vision API calls for photo analysis
 
 import { getLanguage, t } from './i18n.js';
+import { supabase } from './supabase.js';
+import { getCurrentUser } from './auth.js';
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -110,24 +112,62 @@ const RESPONSE_SCHEMA = {
 };
 
 /**
- * Get API key from localStorage
+ * Get API key from localStorage or Supabase
  */
-export function getApiKey() {
-  return localStorage.getItem('gemini_api_key') || '';
+export async function getApiKey() {
+  const localKey = localStorage.getItem('gemini_api_key') || '';
+  const user = getCurrentUser();
+  
+  // If no local key but user is logged in, try to fetch from DB
+  if (user && !localKey) {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('api_key')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!error && data?.api_key) {
+        localStorage.setItem('gemini_api_key', data.api_key);
+        return data.api_key;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch API key from Supabase:', e);
+    }
+  }
+  
+  return localKey;
 }
 
 /**
- * Save API key to localStorage
+ * Save API key to localStorage and Supabase
  */
-export function setApiKey(key) {
-  localStorage.setItem('gemini_api_key', key.trim());
+export async function setApiKey(key) {
+  const trimmedKey = key.trim();
+  localStorage.setItem('gemini_api_key', trimmedKey);
+  
+  const user = getCurrentUser();
+  if (user) {
+    try {
+      await supabase
+        .from('user_settings')
+        .upsert({ 
+          user_id: user.id, 
+          api_key: trimmedKey,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+    } catch (e) {
+      console.warn('Failed to save API key to Supabase:', e);
+    }
+  }
 }
 
 /**
  * Check if API key is set
  */
-export function hasApiKey() {
-  return !!getApiKey();
+export async function hasApiKey() {
+  const key = await getApiKey();
+  return !!key;
 }
 
 /**
@@ -137,7 +177,7 @@ export function hasApiKey() {
  * @returns {Promise<object>} Parsed analysis result
  */
 export async function analyzePhoto(base64Image, mimeType) {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   if (!apiKey) {
     throw new Error(t('messages.key_required'));
   }

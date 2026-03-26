@@ -68,8 +68,8 @@ export const translations = {
       title: "Cài đặt Gemini API",
       desc: "Nhập Gemini API Key của bạn để sử dụng ứng dụng. API Key của bạn sẽ được lưu trữ an toàn trong tài khoản của bạn trên cơ sở dữ liệu cloud.",
       get_key_html: 'Bạn chưa có API Key? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Lấy key tại đây</a>.',
-      label: "API Key:",
-      placeholder: "Nhập AIzaSy...",
+      label: "API Key Gemini:",
+      placeholder: "Dán API Key của bạn vào đây...",
       save_btn: "Lưu thay đổi",
       close_btn: "Đóng"
     },
@@ -157,8 +157,8 @@ export const translations = {
       title: "Gemini API Settings",
       desc: "Enter your Gemini API Key to use the application. Your key will be securely stored in your account on the cloud database.",
       get_key_html: 'Don\'t have an API Key? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get it here</a>.',
-      label: "API Key:",
-      placeholder: "Enter AIzaSy...",
+      label: "Gemini API Key:",
+      placeholder: "Paste your API Key here...",
       save_btn: "Save Changes",
       close_btn: "Close"
     },
@@ -218,13 +218,14 @@ export function renderTranslations() {
     
     if (isHtml) {
       el.innerHTML = translation;
-    } else {
-      // Special case for inputs
-      if (el.tagName === 'INPUT' && el.type === 'text') {
-        el.placeholder = translation;
+    } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      if (['button', 'submit', 'reset'].includes(el.type)) {
+        el.value = translation;
       } else {
-        el.textContent = translation;
+        el.placeholder = translation;
       }
+    } else {
+      el.textContent = translation;
     }
   });
 }
