@@ -68,9 +68,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // Routing & Permissions
 // ============================
 function initRouting() {
-  if (window.location.hash.includes("access_token")) {
-    history.replaceState(null, "", window.location.pathname + window.location.search);
-  }
+  // Delay cleanup to allow Supabase to parse the hash
+  setTimeout(() => {
+    if (window.location.hash.includes("access_token")) {
+      const cleanUrl = window.location.pathname + window.location.search;
+      history.replaceState(null, "", cleanUrl);
+    }
+  }, 500);
 
   $("logo-btn").addEventListener("click", () => {
     goToHome();
