@@ -86,15 +86,16 @@ async function handleRouteChange() {
   const path = window.location.pathname;
   const user = getCurrentUser();
 
-  if (path === "/history") {
+  if (path.endsWith("/history")) {
     if (!user) {
       goToHome();
       return;
     }
     showHistoryViewOnly();
     renderHistory(handleHistoryItemClick);
-  } else if (path.startsWith("/history/")) {
-    const id = path.split("/")[2];
+  } else if (path.includes("/history/")) {
+    const segments = path.split("/");
+    const id = segments[segments.length - 1];
     if (id) {
       // Check if this is the item we just analyzed
       if (latestAnalysisResult && latestAnalysisResult.id === id) {
@@ -140,8 +141,10 @@ async function handleRouteChange() {
 }
 
 function goToHome() {
-  if (window.location.pathname !== "/") {
-    history.pushState(null, "", "/");
+  const base = window.location.pathname.split("/history")[0];
+  const newPath = base === "" ? "/" : base;
+  if (window.location.pathname !== newPath) {
+    history.pushState(null, "", newPath);
   }
   handleRouteChange();
 }
@@ -153,8 +156,11 @@ function goToHistory() {
     return;
   }
 
-  if (window.location.pathname !== "/history") {
-    history.pushState(null, "", "/history");
+  const base = window.location.pathname.split("/history")[0].replace(/\/$/, "");
+  const newPath = `${base}/history`;
+  
+  if (window.location.pathname !== newPath) {
+    history.pushState(null, "", newPath);
   }
   handleRouteChange();
 }
@@ -436,7 +442,9 @@ async function handleAnalyze() {
       latestAnalysisResult = historyItem;
 
       // Update URL to the specific history share link
-      history.pushState(null, "", `/history/${historyItem.id}`);
+      const base = window.location.pathname.split("/history")[0].replace(/\/$/, "");
+      const newPath = `${base}/history/${historyItem.id}`;
+      history.pushState(null, "", newPath);
 
       // We don't call handleRouteChange() directly here anymore,
       // instead we rely on the state update or just show the results.
@@ -475,7 +483,9 @@ async function initHistoryView() {
 }
 
 function handleHistoryItemClick(item) {
-  history.pushState(null, "", `/history/${item.id}`);
+  const base = window.location.pathname.split("/history")[0].replace(/\/$/, "");
+  const newPath = `${base}/history/${item.id}`;
+  history.pushState(null, "", newPath);
   handleRouteChange();
 }
 
