@@ -68,11 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // Routing & Permissions
 // ============================
 function initRouting() {
-  setTimeout(() => {
-    if (window.location.hash.includes("access_token")) {
-      history.replaceState(null, "", window.location.pathname);
-    }
-  }, 100);
+  if (window.location.hash.includes("access_token")) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
 
   $("logo-btn").addEventListener("click", () => {
     goToHome();
