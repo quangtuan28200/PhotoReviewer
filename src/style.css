@@ -816,6 +816,104 @@ img {
   font-size: 0.85rem;
 }
 
+/* --- User Menu --- */
+.user-menu-container {
+  position: relative;
+}
+
+.user-menu-container.open .user-dropdown {
+  display: block;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px 6px 6px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-purple);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent-purple);
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron-icon {
+  margin-left: 4px;
+  opacity: 0.5;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 200px;
+  background: rgba(15, 17, 23, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  transform-origin: top right;
+  animation: slideUp 0.2s ease;
+}
+
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-item svg {
+  opacity: 0.7;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 0;
+}
+
+.text-danger {
+  color: var(--accent-red) !important;
+}
+
 /* --- Toast --- */
 #toast-container {
   position: fixed;
